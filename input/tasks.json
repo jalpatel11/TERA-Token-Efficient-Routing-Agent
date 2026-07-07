@@ -1,0 +1,12 @@
+[
+  {
+    "id": "t-summary",
+    "prompt": "Summarize the history of space flight in one sentence.",
+    "category": "SUMMARY"
+  },
+  {
+    "id": "t-sentiment",
+    "prompt": "Classify the sentiment of this sentence: 'Antigravity coding is absolutely amazing!'",
+    "category": "SENTIMENT"
+  }
+]
