@@ -67,6 +67,43 @@ def test_model_selector_task_routing() -> None:
     assert selector.get_model_for_task(TaskType.LOGIC) == selector.expensive_model
 
 
+def test_model_selector_custom_models() -> None:
+    """Tests model selector logic with the specific models provided by the user."""
+    allowed = [
+        "minimax-m3",
+        "kimi-k2p7-code",
+        "gemma-4-31b-it",
+        "gemma-4-26b-a4b-it",
+        "gemma-4-31b-it-nvfp4",
+    ]
+    selector = ModelSelector(allowed)
+
+    # Sorting verification
+    # Only gemma models should remain:
+    # 1. gemma-4-26b-a4b-it -> 26.0
+    # 2. gemma-4-31b-it & nvfp4 -> 31.0
+    assert selector.sorted_models[0] == "gemma-4-26b-a4b-it"
+    assert "gemma-4-31b-it" in selector.sorted_models[-1]
+
+    # Cheap model should be gemma-4-26b-a4b-it
+    assert selector.cheap_model == "gemma-4-26b-a4b-it"
+    # Capable model should be one of the 31b gemma models
+    assert "gemma-4-31b-it" in selector.expensive_model
+
+    # Routing logic
+    # Coding tasks should fall back to the capable gemma model (no code-specific gemma model exists)
+    assert "gemma-4-31b-it" in selector.get_model_for_task(TaskType.CODE_DEBUG)
+    assert "gemma-4-31b-it" in selector.get_model_for_task(TaskType.CODE_GENERATION)
+
+    # Simple tasks should route to gemma-4-26b-a4b-it
+    assert selector.get_model_for_task(TaskType.SENTIMENT) == "gemma-4-26b-a4b-it"
+
+    # Other complex tasks should route to the capable gemma model
+    assert "gemma-4-31b-it" in selector.get_model_for_task(TaskType.MATH)
+    assert "gemma-4-31b-it" in selector.get_model_for_task(TaskType.LOGIC)
+
+
+
 def test_fireworks_client_success() -> None:
     """Tests successful call and response of the Fireworks client."""
     client = FireworksClient(api_key="key", base_url="https://api.test")

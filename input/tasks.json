@@ -1,12 +1,42 @@
 [
   {
-    "id": "t-summary",
-    "prompt": "Summarize the history of space flight in one sentence.",
-    "category": "SUMMARY"
+    "id": "t-general",
+    "prompt": "Who was the first person to step on the Moon and in what year?",
+    "category": "GENERAL"
+  },
+  {
+    "id": "t-math",
+    "prompt": "If a triangle has sides of length 5, 12, and 13, what is its area?",
+    "category": "MATH"
   },
   {
     "id": "t-sentiment",
-    "prompt": "Classify the sentiment of this sentence: 'Antigravity coding is absolutely amazing!'",
+    "prompt": "Identify the sentiment of this review: 'The product arrived late and was damaged. Very disappointed.'",
     "category": "SENTIMENT"
+  },
+  {
+    "id": "t-summary",
+    "prompt": "Summarize this text in one sentence: 'Artificial intelligence is rapidly transforming industries worldwide. From healthcare to finance, machine learning algorithms are automating complex operations, enhancing decision-making capabilities, and creating new opportunities for innovation. However, ethical concerns regarding bias, transparency, and job displacement remain critical challenges.'",
+    "category": "SUMMARY"
+  },
+  {
+    "id": "t-ner",
+    "prompt": "Extract the names of people, organizations, locations, and dates from: 'On July 20, 1969, Neil Armstrong of NASA stepped onto the Moon.'",
+    "category": "NER"
+  },
+  {
+    "id": "t-codedebug",
+    "prompt": "Fix this Python function with mutable default argument bug:\n\ndef add_item(item, items=[]):\n    items.append(item)\n    return items",
+    "category": "CODE_DEBUG"
+  },
+  {
+    "id": "t-codegen",
+    "prompt": "Write a Python function to compute the Fibonacci sequence up to N.",
+    "category": "CODE_GENERATION"
+  },
+  {
+    "id": "t-logic",
+    "prompt": "A farmer has chickens and rabbits. There are 35 heads and 94 feet. How many chickens and how many rabbits does he have?",
+    "category": "LOGIC"
   }
 ]

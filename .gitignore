@@ -1,6 +1,8 @@
 /AMD ACT II Hackathon_ Track 1.docx
 /rules.pdf
+.env
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+output/
