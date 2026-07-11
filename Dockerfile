@@ -31,6 +31,7 @@ RUN mkdir -p /app/models && \
 COPY config.py .
 COPY main.py .
 COPY agent/ ./agent/
+COPY models/router/ ./models/router/
 
 # Ensure directories for input and output exist in the container
 RUN mkdir -p /input /output

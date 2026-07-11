@@ -2,3 +2,4 @@ requests>=2.31.0
 pytest>=8.0.0
 llama-cpp-python>=0.2.75
 headroom-ai[all]
+transformers>=4.38.0

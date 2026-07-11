@@ -306,3 +306,65 @@ def test_pipeline_time_budgeted_routing_remote_fallback(mock_gemma_client_class,
     assert mock_post.call_count == 1
 
 
+def test_bert_classifier_fallback() -> None:
+    """Tests the fallback category-based logic of the difficulty classifier."""
+    from agent.bert_classifier import predict_difficulty
+    from agent.router import TaskType
+    import agent.bert_classifier as bc
+
+    # Force fallback by overriding the tokenizer to None
+    orig_tokenizer = bc._TOKENIZER
+    bc._TOKENIZER = None
+
+    try:
+        assert predict_difficulty("hello", TaskType.SENTIMENT) == "easy"
+        assert predict_difficulty("hello", TaskType.SUMMARY) == "easy"
+        assert predict_difficulty("hello", TaskType.MATH) == "hard"
+        assert predict_difficulty("hello", TaskType.LOGIC) == "hard"
+    finally:
+        bc._TOKENIZER = orig_tokenizer
+
+
+def test_bert_classifier_prediction() -> None:
+    """Tests the sequence classifier prediction wrapping in predict_difficulty."""
+    from agent.bert_classifier import predict_difficulty
+    from agent.router import TaskType
+    import agent.bert_classifier as bc
+
+    # Save original globals to prevent test contamination
+    orig_tokenizer = bc._TOKENIZER
+    orig_model = bc._MODEL
+    orig_attempted = bc._ATTEMPTED_LOAD
+
+    try:
+        # Mock the loaded tokenizer and model
+        mock_tokenizer = MagicMock()
+        mock_model = MagicMock()
+
+        bc._TOKENIZER = mock_tokenizer
+        bc._MODEL = mock_model
+        bc._ATTEMPTED_LOAD = True
+
+        # Test "easy" prediction (model output index = 0)
+        mock_logits = MagicMock()
+        mock_logits.logits = MagicMock()
+        mock_model.return_value = mock_logits
+
+        with patch("torch.no_grad"), \
+             patch("torch.argmax") as mock_argmax:
+            
+            # Mock index 0 (easy)
+            mock_argmax.return_value.item.return_value = 0
+            assert predict_difficulty("Test easy prompt", TaskType.MATH) == "easy"
+
+            # Mock index 1 (hard)
+            mock_argmax.return_value.item.return_value = 1
+            assert predict_difficulty("Test hard prompt", TaskType.SENTIMENT) == "hard"
+    finally:
+        # Restore original globals
+        bc._TOKENIZER = orig_tokenizer
+        bc._MODEL = orig_model
+        bc._ATTEMPTED_LOAD = orig_attempted
+
+
+

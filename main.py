@@ -14,6 +14,7 @@ from agent.router import normalize_task_type, route, TaskType
 from agent.fireworks_client import FireworksClient
 from agent.model_selector import ModelSelector
 from agent.gemma_client import GemmaClient
+from agent.bert_classifier import predict_difficulty
 from config import Config
 
 # Configure logging to standard output
@@ -93,11 +94,15 @@ def run_pipeline() -> None:
         task_start = time.perf_counter()
 
         try:
-            # Step 1: Routing (task classification)
+            # Step 1: Difficulty Classification (using DistilBERT classifier directly first)
+            difficulty = predict_difficulty(prompt)
+            is_easy_task = (difficulty == "easy")
+
+            # Step 2: Routing (task classification)
             task_type = route(prompt, gemma_client=gemma_client)
             logger.info(
-                "Routed task '%s' to category '%s' using local classifier/heuristics.",
-                task_id, task_type.value
+                "Routed task '%s' to category '%s' using local classifier/heuristics. Difficulty: %s",
+                task_id, task_type.value, difficulty
             )
 
             # Dynamic time budget calculation
@@ -106,10 +111,7 @@ def run_pipeline() -> None:
             remaining_time = 58.0 - elapsed_time  # 60s total limit, with 2s safety buffer
             time_required_for_local = 3.5 * remaining_tasks
 
-            # Simple tasks are routed to local Gemma if budget allows
-            is_simple_task = task_type in {TaskType.SENTIMENT, TaskType.SUMMARY, TaskType.NER, TaskType.GENERAL}
-
-            if is_simple_task and gemma_client.is_available() and remaining_time >= time_required_for_local:
+            if is_easy_task and gemma_client.is_available() and remaining_time >= time_required_for_local:
                 # --- TIER 1: Local Gemma ---
                 logger.info(
                     "Executing task '%s' LOCALLY using Gemma (Tier 1). Remaining time: %.1fs, Required: %.1fs (0 Fireworks tokens)",
@@ -129,8 +131,11 @@ def run_pipeline() -> None:
                 total_local_tasks += 1
             else:
                 # Remote execution (Tier 2 or Tier 3)
-                # Step 2: Model Selection
-                model = model_selector.get_model_for_task(task_type)
+                # Step 3: Model Selection based on predicted difficulty
+                if is_easy_task:
+                    model = model_selector.cheap_model
+                else:
+                    model = model_selector.get_model_for_task(task_type)
                 
                 is_cheap_model = (model == model_selector.cheap_model)
                 if is_cheap_model:
@@ -148,7 +153,7 @@ def run_pipeline() -> None:
                     )
                     total_expensive_remote_tasks += 1
 
-                # Step 3: Local reasoning hints (only for Math/Logic tasks to save remote completion tokens)
+                # Step 4: Local reasoning hints (only for Math/Logic tasks to save remote completion tokens)
                 # Ensure we have enough time budget for reasoning hints (~1.5s per task)
                 hints = None
                 if (task_type in {TaskType.MATH, TaskType.LOGIC} and 
@@ -157,7 +162,7 @@ def run_pipeline() -> None:
                     logger.info("Generating local reasoning hints using Gemma for task '%s'...", task_id)
                     hints = gemma_client.generate_reasoning_hints(prompt)
 
-                # Step 4: Prompt Building (incorporating local hints if available)
+                # Step 5: Prompt Building (incorporating local hints if available)
                 prompt_str = build_prompt(prompt, task_type, hints=hints)
 
                 # Step 5: Call API Client
