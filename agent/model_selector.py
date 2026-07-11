@@ -21,13 +21,7 @@ class ModelSelector:
         if not allowed_models:
             raise ValueError("ALLOWED_MODELS list cannot be empty.")
 
-        # Filter allowed models to only use Gemma models if any are present
-        gemma_models = [m for m in allowed_models if "gemma" in m.lower()]
-        if gemma_models:
-            self.allowed_models = gemma_models
-            logger.info("Restricted model selection to Gemma models: %s", self.allowed_models)
-        else:
-            self.allowed_models = allowed_models
+        self.allowed_models = allowed_models
 
         # Sort allowed models from smallest (cheapest) to largest (most capable)
         self.sorted_models = sorted(self.allowed_models, key=self._estimate_model_tier)

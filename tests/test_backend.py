@@ -79,28 +79,31 @@ def test_model_selector_custom_models() -> None:
     selector = ModelSelector(allowed)
 
     # Sorting verification
-    # Only gemma models should remain:
-    # 1. gemma-4-26b-a4b-it -> 26.0
-    # 2. gemma-4-31b-it & nvfp4 -> 31.0
-    assert selector.sorted_models[0] == "gemma-4-26b-a4b-it"
-    assert "gemma-4-31b-it" in selector.sorted_models[-1]
+    # Sorted order should be:
+    # 1. kimi-k2p7-code (2.7)
+    # 2. gemma-4-26b-a4b-it (26.0)
+    # 3. gemma-4-31b-it (31.0)
+    # 4. gemma-4-31b-it-nvfp4 (31.0)
+    # 5. minimax-m3 (300.0)
+    assert selector.sorted_models[0] == "kimi-k2p7-code"
+    assert selector.sorted_models[-1] == "minimax-m3"
 
-    # Cheap model should be gemma-4-26b-a4b-it
+    # Cheap model should be gemma-4-26b-a4b-it (non-code, smallest)
     assert selector.cheap_model == "gemma-4-26b-a4b-it"
-    # Capable model should be one of the 31b gemma models
-    assert "gemma-4-31b-it" in selector.expensive_model
+    # Capable model should be minimax-m3
+    assert selector.expensive_model == "minimax-m3"
 
     # Routing logic
-    # Coding tasks should fall back to the capable gemma model (no code-specific gemma model exists)
-    assert "gemma-4-31b-it" in selector.get_model_for_task(TaskType.CODE_DEBUG)
-    assert "gemma-4-31b-it" in selector.get_model_for_task(TaskType.CODE_GENERATION)
+    # Coding tasks should route to kimi-k2p7-code
+    assert selector.get_model_for_task(TaskType.CODE_DEBUG) == "kimi-k2p7-code"
+    assert selector.get_model_for_task(TaskType.CODE_GENERATION) == "kimi-k2p7-code"
 
-    # Simple tasks should route to gemma-4-26b-a4b-it
+    # Simple tasks should route to cheap model (gemma-4-26b-a4b-it)
     assert selector.get_model_for_task(TaskType.SENTIMENT) == "gemma-4-26b-a4b-it"
 
-    # Other complex tasks should route to the capable gemma model
-    assert "gemma-4-31b-it" in selector.get_model_for_task(TaskType.MATH)
-    assert "gemma-4-31b-it" in selector.get_model_for_task(TaskType.LOGIC)
+    # Other complex tasks should route to capable model (minimax-m3)
+    assert selector.get_model_for_task(TaskType.MATH) == "minimax-m3"
+    assert selector.get_model_for_task(TaskType.LOGIC) == "minimax-m3"
 
 
 
